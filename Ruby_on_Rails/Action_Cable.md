@@ -48,22 +48,39 @@ rooms_channel.jsを以下のように編集する
 ```JavaScript
 import consumer from "channels/consumer"
 
-  const app = consumer.subscriptions.create("RoomsChannel", {
-    connected() {
-      // Called when the subscription is ready for use on the server
-    },
+const app = consumer.subscriptions.create("RoomsChannel", {
+  connected() {
+    // Called when the subscription is ready for use on the server
+  },
 
-    disconnected() {
-      // Called when the subscription has been terminated by the server
-    },
+  disconnected() {
+    // Called when the subscription has been terminated by the server
+  },
 
-    received(data) {
-      const messageContainer = document.getElementById("message-container");
-      messageContainer.insertAdjacentHTML("beforeend", data["message");
-    },
+  received(data) {
+    const messageContainer = document.getElementById("message-container");
+    messageContainer.insertAdjacentHTML("beforeend", data["message");
+  },
 
-    post(message){
-      return this.perform("post", {message: message});
-    }
+  post(message){
+    return this.perform("post", {message: message});
+  }
+});
+
+window.addEventListener("turbo:load",() => {
+  let form = document.getElementById("input-form");
+  let text = document.getElementById("input-text");
+  form.addEventListener("submit",(e) => {
+    app.post(text.value);
+    text.value = "";
+    e.preventDefault();
   });
+});
+```
+
+Messageモデルに以下のように編集する
+```ruby
+class Message < ApplicationRecord
+  after_create_commit { MessageBroadcastJob.perform_later self }
+end
 ```
